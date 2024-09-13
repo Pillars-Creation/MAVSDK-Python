@@ -6,8 +6,13 @@ from mavsdk import System
 
 async def run():
 
-    drone = System()
-    await drone.connect(system_address="udp://:14540")
+    # drone = System()
+    # await drone.connect(system_address="udp://:14540")
+    # # 创建 MAVSDK 服务器连接实例
+    drone = System(mavsdk_server_address='localhost', port=50051)
+    #
+    # # 连接到仿真器上的飞控系统
+    await drone.connect(system_address="udp://192.168.255.10:14540")  # 设置为仿真器的 UDP 地址
 
     status_text_task = asyncio.ensure_future(print_status_text(drone))
 
