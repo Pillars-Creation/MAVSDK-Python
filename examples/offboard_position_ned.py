@@ -17,9 +17,10 @@ from mavsdk.offboard import (OffboardError, PositionNedYaw)
 async def run():
     """ Does Offboard control using position NED coordinates. """
 
-    drone = System()
-    await drone.connect(system_address="udp://:14540")
-
+    # drone = System()
+    # await drone.connect(system_address="udp://:14540")
+    drone = System(mavsdk_server_address='localhost', port=50051)
+    await drone.connect(system_address="udp://192.168.255.10:14540")
     print("Waiting for drone to connect...")
     async for state in drone.core.connection_state():
         if state.is_connected:
