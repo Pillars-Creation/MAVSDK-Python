@@ -4,6 +4,7 @@ import asyncio
 import keyboard
 from mavsdk import System
 from mavsdk.offboard import VelocityNedYaw
+from mavsdk.offboard import PositionNed
 
 async def run():
     # Create MAVSDK server connection instance
@@ -46,6 +47,14 @@ async def run():
         await drone.action.land()
         status_text_task.cancel()
         control_task.cancel()
+        try:
+            await status_text_task
+        except asyncio.CancelledError:
+            pass
+        try:
+            await control_task
+        except asyncio.CancelledError:
+            pass
 
 
 async def print_status_text(drone):
@@ -59,45 +68,27 @@ async def print_status_text(drone):
 async def control_drone(drone):
     # Default yaw angle set to 0 degrees (facing north)
     yaw_angle = 0.0
+    # 初始化 Offboard 模式
+    # 创建位置对象
+    position = PositionNed(0, 0, -10)  # NED 坐标
+
+    # 设置无人机目标位置
+    await drone.offboard.set_position_ned(position)
+
+    await drone.offboard.set_velocity_ned(
+        VelocityNedYaw(north_m_s=0.0, east_m_s=0.0, down_m_s=-5.0, yaw_deg=yaw_angle)
+    )
+    # 设置目标位置
+    await drone.offboard.start()
 
     while True:
         try:
-            if keyboard.is_pressed('w'):  # Move forward
-                await drone.offboard.set_velocity_ned(
-                    velocity_ned=[1.0, 0.0, 0.0]  # Adjust speed as needed
-                )
-                print("KeyboardInterrupt up")
-            elif keyboard.is_pressed('s'):  # Move backward
-                await drone.offboard.set_velocity_ned(
-                    velocity_ned=[-1.0, 0.0, 0.0]
-                )
-                print("KeyboardInterrupt down")
-            elif keyboard.is_pressed('a'):  # Move left
-                await drone.offboard.set_velocity_ned(
-                    velocity_ned=[0.0, 1.0, 0.0]
-                )
-                print("KeyboardInterrupt left")
-            elif keyboard.is_pressed('right'):  # Move right
-                await drone.offboard.set_velocity_ned(
-                    velocity_ned=[0.0, -1.0, 0.0]
-                )
-                print("KeyboardInterrupt right")
-            elif keyboard.is_pressed('up'):  # Move up
-                await drone.offboard.set_velocity_ned(
-                    velocity_ned=[0.0, 0.0, 1.0]
-                )
-                print("KeyboardInterrupt up")
-            elif keyboard.is_pressed('down'):  # Move down
-                await drone.offboard.set_velocity_ned(
-                    velocity_ned=[0.0, 0.0, -1.0]
-                )
-                print("KeyboardInterrupt down")
-            else:
-                # Stop the drone if no key is pressed
-                await drone.offboard.set_velocity_ned(
-                    VelocityNedYaw(north_m_s=0.0, east_m_s=0.0, down_m_s=0.0, yaw_deg=yaw_angle)
-                )
-                print("no key is pressed")
+
+            await drone.offboard.set_velocity_ned(
+                    VelocityNedYaw(north_m_s=1.0, east_m_s=0.0, down_m_s=0.0, yaw_deg=yaw_angle)
+            )
+            print("Moving forward")
+
             await asyncio.sleep(0.1)  # Small delay to avoid busy-waiting
         except asyncio.CancelledError:
             return
